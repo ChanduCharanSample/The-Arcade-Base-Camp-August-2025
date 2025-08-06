@@ -15,9 +15,10 @@ chmod +x CloudCupcake.sh
 
 # Run the infrastructure setup script
 ./CloudCupcake.sh
-
+```
 # ✅ Infrastructure setup complete. Now proceed to Step 2 👇
 ✨ Step 2: Final verification & lab completion
+```
 bash
 Copy
 Edit
@@ -29,6 +30,7 @@ chmod +x CloudCupcake1.sh
 
 # Run the verification script to check tunnels, ping tests, and complete the lab
 ./CloudCupcake1.sh
+```
 ✅ This script verifies:
 
 VPN Tunnel Status
