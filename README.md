@@ -1,65 +1,64 @@
-# 🍩 CloudCupcake - The Arcade Base Camp - August 2025
+# 🌐 The Arcade Base Camp – August 2025
 
-## 🔗 Lab Link:
-**[Configuring Network Connectivity Center as a Transit Hub - GSP911](https://www.cloudskillsboost.google/games/6393/labs/40251)**
-
----
-
-## ⚠️ Disclaimer
-
-This script and guide are provided for educational purposes only. Please do not misuse this script to bypass lab learning.  
-Before using the script, review it to understand Google Cloud services. Follow all Qwiklabs terms of service and respect YouTube Community Guidelines.
+## 🚀 Copy and run the below commands in **Google Cloud Shell**
 
 ---
 
-## 📜 Credit
+### 🔧 Step 1: Set up infrastructure
 
-DM for credit or removal request (no copyright intended).  
-All rights and credits for the original content belong to **Google Cloud**  
-🔗 [Google Cloud Skill Boost](https://www.cloudskillsboost.google)
-
----
-
-## 🖥️ Copy and run the below commands in **Google Cloud Shell**:
-
-### 📌 Step 1: Set up infrastructure
 ```bash
+# Download the base infrastructure setup script
 curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake.sh
+
+# Make the script executable
 chmod +x CloudCupcake.sh
+
+# Run the infrastructure setup script
 ./CloudCupcake.sh
-✨ Step 2: Run the verification and final setup script
+
+# ✅ Infrastructure setup complete. Now proceed to Step 2 👇
+✨ Step 2: Final verification & lab completion
 bash
 Copy
 Edit
+# Download the final verification and ping test script
 curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake1.sh
+
+# Make the script executable
 chmod +x CloudCupcake1.sh
+
+# Run the verification script to check tunnels, ping tests, and complete the lab
 ./CloudCupcake1.sh
-This step verifies tunnel status, runs final ping tests, and completes the lab ✅
+✅ This script verifies:
 
-📹 Watch the Lab Guide on our Channel
-👉 CloudCupcake YouTube Channel
+VPN Tunnel Status
 
-🧠 What this script sets up:
-VPCs: vpc-transit, vpc-a, vpc-b
+Cloud Router BGP Sessions
+
+VM Connectivity between spokes
+
+Lab completion with green check ✅
+
+📺 Watch the Lab Walkthrough:
+CloudCupcake YouTube Channel
+
+📌 What this script sets up automatically:
+
+Three VPCs: vpc-transit, vpc-a, vpc-b
+
+HA VPN tunnels between vpc-transit ↔ vpc-a and vpc-transit ↔ vpc-b
 
 Cloud Routers with BGP
 
-HA VPN Gateways and tunnels
+Network Connectivity Center (NCC) Hub + Spokes
 
-NCC Hub and Spokes
+End-to-end VM connectivity test
 
-BGP Sessions
+💡 Pro Tip: If you see ✅ at the end of the script, you’ve completed the lab successfully. Congrats!
 
-Final connectivity tests
+📢 Don't forget to subscribe to our channel for more Google Cloud Arcade labs.
 
-🎉 Congratulations, you're all done with the lab!
-🌐 Join our Community
-📢 Join our Telegram Channel
-💬 Join our Discussion Group
-🤝 Join our WhatsApp Community
-
-👨‍💻 Powered by CloudCupcake
-Don't forget to Like, Share & Subscribe 😄
+Made with ☁️ by CloudCupcake | Arcade Crew
 
 yaml
 Copy
@@ -67,21 +66,11 @@ Edit
 
 ---
 
-Let me know if you'd like me to commit this to your repo or update formatting/styling!
+Let me know if you want to:
+- Add badges (e.g., YouTube, GCP verified)
+- Create an `.sh` that prints ASCII art or branding
+- Auto-detect errors and retry in the shell script
+
+I can generate those as well 🚀
 
 
-
-
-
-
-
-
-Ask ChatGPT
-
-
-
-Tools
-
-
-
-ChatG
