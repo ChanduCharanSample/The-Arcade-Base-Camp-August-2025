@@ -1,10 +1,21 @@
-# 🌐 The Arcade Base Camp – August 2025
+📦 The-Arcade-Base-Camp-August-2025
+🔧 Lab Focus: Configuring Network Connectivity Center as a Transit Hub – GSP911
+🎓 Platform: Google Cloud Skills Boost
+💡 Lab Link: Configuring Network Connectivity Center as a Transit Hub – GSP911
 
-## 🚀 Copy and run the below commands in **Google Cloud Shell**
+🚀 Lab Automation Script
+This repository contains a fully automated shell script (techcps911.sh) to complete the GSP911 lab on Google Cloud Skills Boost. It configures:
+✅ VPC networks
+✅ HA VPN Gateways
+✅ Cloud Routers and BGP sessions
+✅ Network Connectivity Center (NCC) with hub-and-spoke setup
+✅ Tunnel status checks and peer validation
+✅ Final setup verification
+✅ Cloud Shell-friendly script
 
----
 
-### 🔧 Step 1: Set up infrastructure
+🧠 How to Use
+📌 Open Cloud Shell in the Google Cloud Console and run the below commands:
 
 ```bash
 # Download the base infrastructure setup script
@@ -31,48 +42,30 @@ chmod +x CloudCupcake1.sh
 # Run the verification script to check tunnels, ping tests, and complete the lab
 ./CloudCupcake1.sh
 ```
-✅ This script verifies:
+👏 Credits
+© All rights and credits for original lab content belong to Google Cloud and the Google Cloud Skills Boost platform.
 
-VPN Tunnel Status
+This project does not claim ownership of any official Google assets or branding.
 
-Cloud Router BGP Sessions
+DM for credit or removal request — no copyright infringement intended.
 
-VM Connectivity between spokes
+💬 Join Our Community
+Stay updated and connected with other cloud learners:
 
-Lab completion with green check ✅
+🧵 Telegram Channel – Latest Lab Updates & Tricks
 
-📺 Watch the Lab Walkthrough:
-CloudCupcake YouTube Channel
+💬 Telegram Discussion Group – Ask Questions, Share Solutions
 
-📌 What this script sets up automatically:
+📱 WhatsApp Community – Join Here
 
-Three VPCs: vpc-transit, vpc-a, vpc-b
+❤️ Support Us
+If this helped you:
 
-HA VPN tunnels between vpc-transit ↔ vpc-a and vpc-transit ↔ vpc-b
+⭐ Star this repo
 
-Cloud Routers with BGP
+🔔 Subscribe to our channel → CLOUDCUPCAKE on YouTube
 
-Network Connectivity Center (NCC) Hub + Spokes
+👍 Like & Share with your cloud learning friends
 
-End-to-end VM connectivity test
-
-💡 Pro Tip: If you see ✅ at the end of the script, you’ve completed the lab successfully. Congrats!
-
-📢 Don't forget to subscribe to our channel for more Google Cloud Arcade labs.
-
-Made with ☁️ by CloudCupcake | Arcade Crew
-
-yaml
-Copy
-Edit
-
----
-
-Let me know if you want to:
-- Add badges (e.g., YouTube, GCP verified)
-- Create an `.sh` that prints ASCII art or branding
-- Auto-detect errors and retry in the shell script
-
-I can generate those as well 🚀
-
+🙏 Thanks for using this script and being part of the #ArcadeBaseCamp journey. Keep exploring. Keep learning. 🚀
 
