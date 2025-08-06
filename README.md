@@ -1,23 +1,45 @@
-📦 The-Arcade-Base-Camp-August-2025
-🔧 Lab: Configuring Network Connectivity Center as a Transit Hub – GSP911
-💡 Platform: Google Cloud Skills Boost
-👨‍💻 Automation Script by: CLOUDCUPCAKE
+# 🍩 CloudCupcake - The Arcade Base Camp - August 2025
 
-🚀 Lab Automation Scripts
-This lab can be completed using 2 automated scripts to save your time and help you understand the architecture quickly.
+## 🔗 Lab Link:
+**[Configuring Network Connectivity Center as a Transit Hub - GSP911](https://www.cloudskillsboost.google/games/6393/labs/40251)**
 
-🧠 How to Use
-📌 STEP 1: Open Google Cloud Shell
-Then copy and run the following:
+---
 
-bash
-Copy
-Edit
+## ⚠️ Disclaimer
+
+This script and guide are provided for educational purposes only. Please do not misuse this script to bypass lab learning.  
+Before using the script, review it to understand Google Cloud services. Follow all Qwiklabs terms of service and respect YouTube Community Guidelines.
+
+---
+
+## 📜 Credit
+
+DM for credit or removal request (no copyright intended).  
+All rights and credits for the original content belong to **Google Cloud**  
+🔗 [Google Cloud Skill Boost](https://www.cloudskillsboost.google)
+
+---
+
+## 🖥️ Copy and run the below commands in **Google Cloud Shell**:
+
+### 📌 Step 1: Set up infrastructure
+```bash
 curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake.sh
 chmod +x CloudCupcake.sh
 ./CloudCupcake.sh
-✅ This script sets up:
+✨ Step 2: Run the verification and final setup script
+bash
+Copy
+Edit
+curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake1.sh
+chmod +x CloudCupcake1.sh
+./CloudCupcake1.sh
+This step verifies tunnel status, runs final ping tests, and completes the lab ✅
 
+📹 Watch the Lab Guide on our Channel
+👉 CloudCupcake YouTube Channel
+
+🧠 What this script sets up:
 VPCs: vpc-transit, vpc-a, vpc-b
 
 Cloud Routers with BGP
@@ -26,43 +48,40 @@ HA VPN Gateways and tunnels
 
 NCC Hub and Spokes
 
-BGP sessions + connectivity test
+BGP Sessions
 
-✨ Run this code now (Step 2):
-After Step 1 completes, run this second command in Cloud Shell:
+Final connectivity tests
 
-bash
+🎉 Congratulations, you're all done with the lab!
+🌐 Join our Community
+📢 Join our Telegram Channel
+💬 Join our Discussion Group
+🤝 Join our WhatsApp Community
+
+👨‍💻 Powered by CloudCupcake
+Don't forget to Like, Share & Subscribe 😄
+
+yaml
 Copy
 Edit
-curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake1.sh
-chmod +x CloudCupcake1.sh
-./CloudCupcake1.sh
-🔁 This will verify tunnel status, run final ping tests, and complete the lab!
 
-📽️ Watch the Lab Guide
+---
 
-⚠️ Disclaimer
-This script and guide are provided for educational purposes only.
-Please do not misuse the script to bypass lab learning.
+Let me know if you'd like me to commit this to your repo or update formatting/styling!
 
-✔️ Follow all Qwiklabs Terms of Service
-✔️ Respect YouTube Community Guidelines
 
-👏 Credits
-All content & lab belong to Google Cloud
 
-Script authored by: CLOUDCUPCAKE Crew
 
-DM for credit or removal request — no copyright intended
 
-💬 Join Our Community
-🚀 Telegram Channel
-💬 Telegram Discussion Group
-📱 WhatsApp Community
-❤️ Support Us
-⭐ Star this repo
 
-🧠 “Automate the boring, understand the architecture!” — CloudCupcake ✨
-🔔 Subscribe on YouTube: CLOUDCUPCAKE
 
-🫶 Like, Share & Comment
+
+Ask ChatGPT
+
+
+
+Tools
+
+
+
+ChatG
