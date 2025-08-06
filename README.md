@@ -42,20 +42,9 @@ This step verifies tunnel status, runs final ping tests, and completes the lab �
 📹 Watch the Lab Guide on our Channel
 👉 CloudCupcake YouTube Channel
 
-🧠 What this script sets up:
-VPCs: vpc-transit, vpc-a, vpc-b
-
-Cloud Routers with BGP
-
-HA VPN Gateways and tunnels
-
-NCC Hub and Spokes
-
-BGP Sessions
-
-Final connectivity tests
 
 🎉 Congratulations, you're all done with the lab!
+
 🌐 Join our Community
 📢 Join our Telegram Channel
 💬 Join our Discussion Group
