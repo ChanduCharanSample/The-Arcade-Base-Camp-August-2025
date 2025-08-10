@@ -23,16 +23,13 @@ All rights and credits for the original content belong to **Google Cloud**
 
 ## 🖥️ Copy and run the below commands in **Google Cloud Shell**:
 
-### 📌 Step 1: Set up infrastructure
+### 📌 Step 1: Run the first code.
 ```bash
-curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake.sh
-chmod +x CloudCupcake.sh
-./CloudCupcake.sh
+curl -LO "https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Transacting%20Digital%20Assets%20with%20Multi-Party%20Computation%20and%20Confidential%20Space/GSP1128-1.sh"
+chmod +x GSP1128-1.sh
+./GSP1128-1.sh
 ```
-✨ Step 2: Run the verification and final setup script
-bash
-Copy
-Edit
+✨ Step 2: Run the next code 
 ```
 curl -LO https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/Welcome%20to%20Base%20Camp/Configuring%20Network%20Connectivity%20Center%20as%20a%20Transit%20Hub/CloudCupcake1.sh
 chmod +x CloudCupcake1.sh
