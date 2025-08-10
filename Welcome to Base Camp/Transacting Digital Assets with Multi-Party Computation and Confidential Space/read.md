@@ -2,7 +2,7 @@
 # 🍩 CloudCupcake - The Arcade Base Camp - August 2025 - Transacting Digital Assets with Multi-Party Computation and Confidential Space
 
 ## 🔗 Lab Link:
-**[Configuring Network Connectivity Center as a Transit Hub - GSP911]((https://www.cloudskillsboost.google/games/6393/labs/40254))**
+**[Configuring Network Connectivity Center as a Transit Hub - GSP911](https://www.cloudskillsboost.google/games/6393/labs/40254)**
 
 ---
 
