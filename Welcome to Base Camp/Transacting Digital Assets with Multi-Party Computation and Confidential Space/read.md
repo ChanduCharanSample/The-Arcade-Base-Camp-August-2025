@@ -51,6 +51,6 @@ chmod +x GSP1128-2.sh
 💬 Join our Discussion Group
 
 🤝 Join our WhatsApp Community : https://whatsapp.com/channel/0029Vb3TZ4qIiRovZLca2D0m
----
+
 👨‍💻 Powered by CloudCupcake
 Don't forget to Like, Share & Subscribe 😄
