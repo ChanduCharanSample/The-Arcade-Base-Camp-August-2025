@@ -44,10 +44,13 @@ chmod +x GSP1128-2.sh
 🎉 Congratulations, you're all done with the lab!
 ---
 
-##🌐 Join our Community
-##📢 Join our Telegram Channel
-##💬 Join our Discussion Group
-##🤝 Join our WhatsApp Community
+🌐 Join our Community
+
+📢 Join our Telegram Channel
+
+💬 Join our Discussion Group
+
+🤝 Join our WhatsApp Community
 ---
 👨‍💻 Powered by CloudCupcake
 Don't forget to Like, Share & Subscribe 😄
