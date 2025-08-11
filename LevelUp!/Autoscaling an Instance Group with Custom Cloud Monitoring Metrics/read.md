@@ -30,9 +30,7 @@ export zone=(Enter your zone)
 📌 Step 2: Run the First Code:
 This script sets up the environment and creates the instance group with autoscaling OFF.
 
-bash
-Copy
-Edit
+
 ```
 curl -LO "https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/LevelUp!/Autoscaling%20an%20Instance%20Group%20with%20Custom%20Cloud%20Monitoring%20Metrics/cloudcupcake.sh"
 chmod +x cloudcupcake.sh
@@ -47,15 +45,13 @@ Follow along with the YouTube tutorial for clear guidance.
 📌 Step 4: Run the Second Code
 This script configures autoscaling for the instance group using the custom metric.
 
-bash
-Copy
-Edit
+
 ```
 curl -LO "https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/LevelUp!/Autoscaling%20an%20Instance%20Group%20with%20Custom%20Cloud%20Monitoring%20Metrics/cloudcupcake1.sh"
 chmod +x cloudcupcake1.sh
 ./cloudcupcake1.sh
 ```
-
+---
 🎉 Congratulations! You’ve completed the lab successfully.
 
 🌐 Join the CloudCupcake Community
