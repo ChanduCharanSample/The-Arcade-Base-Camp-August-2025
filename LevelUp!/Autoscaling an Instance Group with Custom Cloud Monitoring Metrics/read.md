@@ -1,4 +1,4 @@
-#🍩 **CloudCupcake - The Arcade Base Camp - August 2025**  
+🍩 **CloudCupcake - The Arcade Base Camp - August 2025**  
 🚀 **Lab:** Autoscaling an Instance Group with Custom Cloud Monitoring Metrics  
 🔗 **Lab Link:** [Click here to open the lab](https://www.cloudskillsboost.google/games/6393/labs/40262)  
 
