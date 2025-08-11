@@ -39,7 +39,9 @@ chmod +x cloudcupcake.sh
 ./cloudcupcake.sh
 ```
 📌 Step 3: Watch the Lab Walkthrough 🎥
+
 Follow along with the YouTube tutorial for clear guidance.
+
 👉 Subscribe to CloudCupcake on YouTube 💛
 
 📌 Step 4: Run the Second Code
@@ -57,10 +59,15 @@ chmod +x cloudcupcake1.sh
 🎉 Congratulations! You’ve completed the lab successfully.
 
 🌐 Join the CloudCupcake Community
+
 📢 Telegram Channel – Stay updated on labs & scripts.
+
 💬 Discussion Group – Share tips & tricks.
+
 🤝 WhatsApp Community – Connect with other learners.
+
 🔗 Join our WhatsApp Channel
 
 👨‍💻 Powered by CloudCupcake
-💛 Don’t forget to Like, Share & Subscribe 😄
+
+#💛 Don’t forget to Like, Share & Subscribe 😄
