@@ -32,9 +32,9 @@ This script sets up the environment and creates the instance group with autoscal
 
 
 ```
-curl -LO "https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/LevelUp!/Autoscaling%20an%20Instance%20Group%20with%20Custom%20Cloud%20Monitoring%20Metrics/cloudcupcake.sh"
-chmod +x cloudcupcake.sh
-./cloudcupcake.sh
+set +H
+curl -LO "https://raw.githubusercontent.com/ChanduCharanSample/The-Arcade-Base-Camp-August-2025/main/LevelUp!/Autoscaling%20an%20Instance%20Group%20with%20Custom%20Cloud%20Monitoring%20Metrics/cloudcupcake.sh" && chmod +x cloudcupcake.sh && ./cloudcupcake.sh
+
 ```
 📌 Step 3: Watch the Lab Walkthrough 🎥
 
