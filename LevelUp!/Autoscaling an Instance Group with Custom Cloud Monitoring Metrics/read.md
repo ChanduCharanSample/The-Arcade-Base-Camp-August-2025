@@ -52,7 +52,8 @@ chmod +x cloudcupcake1.sh
 ./cloudcupcake1.sh
 ```
 ---
-🎉 Congratulations! You’ve completed the lab successfully.
+#🎉 Congratulations! You’ve completed the lab successfully.
+---
 
 🌐 Join the CloudCupcake Community
 
