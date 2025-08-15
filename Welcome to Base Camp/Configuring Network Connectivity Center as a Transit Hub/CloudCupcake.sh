@@ -1,135 +1,118 @@
 #!/bin/bash
+# cloudcupcake_ha_vpn.sh
+# Automates HA VPN + BGP setup between two VPCs
+# Author: CloudCupcake 🍰
 
-# ==========================
-# 💬 ASCII SUBSCRIBE MESSAGE
-# ==========================
-YELLOW='\033[0;33m'
-NC='\033[0m' 
+set -e
 
-pattern=(
-"**********************************************************"
-"**                 S U B S C R I B E  TO                **"
-"**                 C L O U D C U P C A K E              **"
-"**********************************************************"
-)
-for line in "${pattern[@]}"
-do
-    echo -e "${YELLOW}${line}${NC}"
-done
-#!/bin/bash
-
-# Detect Project ID
+# --- Auto-detect Project and Zone ---
 PROJECT_ID=$(gcloud config get-value project)
-echo "Project ID: $PROJECT_ID"
+ZONE=$(gcloud config get-value compute/zone)
 
-# Set variables
-REGION1="us-east4"
-REGION2="us-central1"
+if [[ -z "$PROJECT_ID" ]]; then
+  echo "❌ ERROR: No project set. Run: gcloud config set project PROJECT_ID"
+  exit 1
+fi
+if [[ -z "$ZONE" ]]; then
+  echo "❌ ERROR: No zone set. Run: gcloud config set compute/zone ZONE"
+  exit 1
+fi
 
-# Step 1: Delete default network (if exists)
-gcloud compute networks delete default --quiet || true
+echo "✅ Using Project: $PROJECT_ID"
+echo "✅ Using Zone: $ZONE"
 
-# Step 2: Create vpc-transit (hub)
-gcloud compute networks create vpc-transit \
-  --subnet-mode=custom \
-  --bgp-routing-mode=global
+REGION=$(echo "$ZONE" | sed 's/-[a-z]$//')
+echo "✅ Using Region: $REGION"
 
-# Step 3: Create vpc-a
-gcloud compute networks create vpc-a \
-  --subnet-mode=custom \
-  --bgp-routing-mode=regional
-gcloud compute networks subnets create vpc-a-sub1-use4 \
-  --network=vpc-a \
-  --region=$REGION1 \
-  --range=10.20.10.0/24
+# --- Variables ---
+VPC1="vpc-a"
+VPC2="vpc-b"
+VPN_GATEWAY1="vpn-gw-a"
+VPN_GATEWAY2="vpn-gw-b"
+ROUTER1="cr-a"
+ROUTER2="cr-b"
+ASN1=65001
+ASN2=65002
 
-# Step 4: Create vpc-b
-gcloud compute networks create vpc-b \
-  --subnet-mode=custom \
-  --bgp-routing-mode=regional
-gcloud compute networks subnets create vpc-b-sub1-usw2 \
-  --network=vpc-b \
-  --region=$REGION2 \
-  --range=10.20.20.0/24
+# --- Create VPCs ---
+echo "🚀 Creating VPCs..."
+gcloud compute networks create $VPC1 --subnet-mode=custom
+gcloud compute networks create $VPC2 --subnet-mode=custom
 
-# Step 5: Create Cloud Routers
-gcloud compute routers create cr-vpc-transit-use4-1 \
-  --network=vpc-transit \
-  --region=$REGION1 \
-  --asn=65000
-gcloud compute routers create cr-vpc-transit-usw2-1 \
-  --network=vpc-transit \
-  --region=$REGION2 \
-  --asn=65000
-gcloud compute routers create cr-vpc-a-use4-1 \
-  --network=vpc-a \
-  --region=$REGION1 \
-  --asn=65001
-gcloud compute routers create cr-vpc-b-usw2-1 \
-  --network=vpc-b \
-  --region=$REGION2 \
-  --asn=65002
+gcloud compute networks subnets create subnet-a --network=$VPC1 --region=$REGION --range=10.0.1.0/24
+gcloud compute networks subnets create subnet-b --network=$VPC2 --region=$REGION --range=10.0.2.0/24
 
-# Step 6: Create Cloud VPN Gateways
-gcloud compute vpn-gateways create vpc-transit-gw1-use4 \
-  --network=vpc-transit \
-  --region=$REGION1
-gcloud compute vpn-gateways create vpc-transit-gw1-usw2 \
-  --network=vpc-transit \
-  --region=$REGION2
-gcloud compute vpn-gateways create vpc-a-gw1-use4 \
-  --network=vpc-a \
-  --region=$REGION1
-gcloud compute vpn-gateways create vpc-b-gw1-usw2 \
-  --network=vpc-b \
-  --region=$REGION2
+# --- Create HA VPN Gateways ---
+echo "🚀 Creating HA VPN Gateways..."
+gcloud compute vpn-gateways create $VPN_GATEWAY1 --network=$VPC1 --region=$REGION
+gcloud compute vpn-gateways create $VPN_GATEWAY2 --network=$VPC2 --region=$REGION
 
-# ⚠️ At this point, you need to manually:
-# - Create HA VPN tunnels between gateways
-# - Configure BGP sessions using correct IPs and ASNs
-# The CLI doesn't fully automate this yet because tunnel interfaces require auto-assigned IPs.
+# --- Create Cloud Routers ---
+echo "🚀 Creating Cloud Routers..."
+gcloud compute routers create $ROUTER1 \
+    --network=$VPC1 \
+    --asn=$ASN1 \
+    --region=$REGION
 
-# Step 7: Enable Network Connectivity API
-gcloud services enable networkconnectivity.googleapis.com
+gcloud compute routers create $ROUTER2 \
+    --network=$VPC2 \
+    --asn=$ASN2 \
+    --region=$REGION
 
-# Step 8: Create NCC hub
-gcloud alpha network-connectivity hubs create transit-hub \
-  --description="Transit_hub"
+# --- Get Gateway IPs ---
+IP1=$(gcloud compute vpn-gateways describe $VPN_GATEWAY1 --region=$REGION --format="value(ip_address)")
+IP2=$(gcloud compute vpn-gateways describe $VPN_GATEWAY2 --region=$REGION --format="value(ip_address)")
 
-# Step 9: Create spokes (bo1 and bo2)
-gcloud alpha network-connectivity spokes create bo1 \
-  --hub=transit-hub \
-  --description=branch_office1 \
-  --vpn-tunnel=transit-to-vpc-a-tu1,transit-to-vpc-a-tu2 \
-  --region=$REGION1
-gcloud alpha network-connectivity spokes create bo2 \
-  --hub=transit-hub \
-  --description=branch_office2 \
-  --vpn-tunnel=transit-to-vpc-b-tu1,transit-to-vpc-b-tu2 \
-  --region=$REGION2
+echo "📡 Gateway A IP: $IP1"
+echo "📡 Gateway B IP: $IP2"
 
-# Step 10: Create firewall rules
-gcloud compute firewall-rules create fw-a \
-  --network=vpc-a \
-  --allow=tcp:22,icmp
-gcloud compute firewall-rules create fw-b \
-  --network=vpc-b \
-  --allow=tcp:22,icmp
+# --- Create VPN Tunnels ---
+echo "🚀 Creating VPN Tunnels..."
+gcloud compute vpn-tunnels create tunnel-a-to-b \
+    --peer-gcp-gateway=$VPN_GATEWAY2 \
+    --region=$REGION \
+    --ike-version=2 \
+    --shared-secret=cloudcupcake \
+    --router=$ROUTER1 \
+    --vpn-gateway=$VPN_GATEWAY1
 
-# Step 11: Create VM in vpc-a
-gcloud compute instances create vpc-a-vm-1 \
-  --zone=us-east4-a \
-  --machine-type=e2-medium \
-  --subnet=vpc-a-sub1-use4 \
-  --image-family=debian-11 \
-  --image-project=debian-cloud
+gcloud compute vpn-tunnels create tunnel-b-to-a \
+    --peer-gcp-gateway=$VPN_GATEWAY1 \
+    --region=$REGION \
+    --ike-version=2 \
+    --shared-secret=cloudcupcake \
+    --router=$ROUTER2 \
+    --vpn-gateway=$VPN_GATEWAY2
 
-# Step 12: Create VM in vpc-b
-gcloud compute instances create vpc-b-vm-1 \
-  --zone=us-central1-c \
-  --machine-type=e2-medium \
-  --subnet=vpc-b-sub1-usw2 \
-  --image-family=debian-11 \
-  --image-project=debian-cloud
+# --- Create BGP Interfaces ---
+echo "🚀 Configuring BGP..."
+gcloud compute routers add-interface $ROUTER1 \
+    --interface-name=if-a \
+    --ip-address=169.254.0.1 \
+    --mask-length=30 \
+    --vpn-tunnel=tunnel-a-to-b \
+    --region=$REGION
 
-echo "GO TO NEXT CODE!:"
+gcloud compute routers add-interface $ROUTER2 \
+    --interface-name=if-b \
+    --ip-address=169.254.0.2 \
+    --mask-length=30 \
+    --vpn-tunnel=tunnel-b-to-a \
+    --region=$REGION
+
+# --- Add BGP Peers ---
+gcloud compute routers add-bgp-peer $ROUTER1 \
+    --peer-name=peer-to-b \
+    --interface-name=if-a \
+    --peer-ip-address=169.254.0.2 \
+    --peer-asn=$ASN2 \
+    --region=$REGION
+
+gcloud compute routers add-bgp-peer $ROUTER2 \
+    --peer-name=peer-to-a \
+    --interface-name=if-b \
+    --peer-ip-address=169.254.0.1 \
+    --peer-asn=$ASN1 \
+    --region=$REGION
+
+echo "🎉 HA VPN with BGP setup complete!"
