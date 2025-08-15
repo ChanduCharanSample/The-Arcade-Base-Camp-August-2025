@@ -17,32 +17,39 @@ fi
 echo "✅ Using Project ID: $PROJECT_ID"
 
 # ==========================
-# Variables (Adjust if needed)
+# Variables
 # ==========================
-REGION_A="us-central1"
 ZONE_A="us-central1-c"
-REGION_B="us-west1"
 ZONE_B="us-west1-b"
 SUBNET_A="vpc-a-sub1-use4"
 SUBNET_B="vpc-b-sub1-usw2"
+NETWORK_A="vpc-a"
+NETWORK_B="vpc-b"
+
+# ==========================
+# Step 0: Clean up old resources
+# ==========================
+echo "🧹 Cleaning up old resources..."
+gcloud compute instances delete vpc-a-vm-1 --zone=$ZONE_A --quiet || true
+gcloud compute instances delete vpc-b-vm-1 --zone=$ZONE_B --quiet || true
+gcloud compute firewall-rules delete fw-a --quiet || true
+gcloud compute firewall-rules delete fw-b --quiet || true
 
 # ==========================
 # Step 1: Create firewall rules
 # ==========================
 echo "🚀 Creating firewall rules..."
 gcloud compute firewall-rules create fw-a \
-  --network=vpc-a \
+  --network=$NETWORK_A \
   --allow=tcp:22,icmp \
   --direction=INGRESS \
-  --priority=1000 \
-  --quiet || echo "⚠️ fw-a already exists."
+  --priority=1000
 
 gcloud compute firewall-rules create fw-b \
-  --network=vpc-b \
+  --network=$NETWORK_B \
   --allow=tcp:22,icmp \
   --direction=INGRESS \
-  --priority=1000 \
-  --quiet || echo "⚠️ fw-b already exists."
+  --priority=1000
 
 # ==========================
 # Step 2: Create VM in vpc-a
@@ -55,8 +62,7 @@ gcloud compute instances create vpc-a-vm-1 \
   --image-family=debian-11 \
   --image-project=debian-cloud \
   --boot-disk-type=pd-balanced \
-  --boot-disk-size=10GB \
-  --quiet || echo "⚠️ vpc-a-vm-1 already exists."
+  --boot-disk-size=10GB
 
 # ==========================
 # Step 3: Create VM in vpc-b
@@ -69,8 +75,7 @@ gcloud compute instances create vpc-b-vm-1 \
   --image-family=debian-11 \
   --image-project=debian-cloud \
   --boot-disk-type=pd-balanced \
-  --boot-disk-size=10GB \
-  --quiet || echo "⚠️ vpc-b-vm-1 already exists."
+  --boot-disk-size=10GB
 
 # ==========================
 # Step 4: Output Internal IPs
