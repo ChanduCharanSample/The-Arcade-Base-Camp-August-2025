@@ -1,118 +1,147 @@
-#!/bin/bash
-# cloudcupcake_ha_vpn.sh
-# Automates HA VPN + BGP setup between two VPCs
-# Author: CloudCupcake 🍰
 
-set -e
 
-# --- Auto-detect Project and Zone ---
-PROJECT_ID=$(gcloud config get-value project)
-ZONE=$(gcloud config get-value compute/zone)
+# Set text styles
+YELLOW=$(tput setaf 3)
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
 
-if [[ -z "$PROJECT_ID" ]]; then
-  echo "❌ ERROR: No project set. Run: gcloud config set project PROJECT_ID"
-  exit 1
-fi
-if [[ -z "$ZONE" ]]; then
-  echo "❌ ERROR: No zone set. Run: gcloud config set compute/zone ZONE"
-  exit 1
-fi
 
-echo "✅ Using Project: $PROJECT_ID"
-echo "✅ Using Zone: $ZONE"
+echo "Please set the below values correctly"
+read -p "${YELLOW}${BOLD}Enter the ZONE_1: ${RESET}" ZONE_1
+read -p "${YELLOW}${BOLD}Enter the ZONE_2: ${RESET}" ZONE_2
 
-REGION=$(echo "$ZONE" | sed 's/-[a-z]$//')
-echo "✅ Using Region: $REGION"
+# Export variables after collecting input
+export ZONE_1 ZONE_2
 
-# --- Variables ---
-VPC1="vpc-a"
-VPC2="vpc-b"
-VPN_GATEWAY1="vpn-gw-a"
-VPN_GATEWAY2="vpn-gw-b"
-ROUTER1="cr-a"
-ROUTER2="cr-b"
-ASN1=65001
-ASN2=65002
+export REGION_1="${ZONE_1%-*}"
 
-# --- Create VPCs ---
-echo "🚀 Creating VPCs..."
-gcloud compute networks create $VPC1 --subnet-mode=custom
-gcloud compute networks create $VPC2 --subnet-mode=custom
+export REGION_2="${ZONE_2%-*}"
 
-gcloud compute networks subnets create subnet-a --network=$VPC1 --region=$REGION --range=10.0.1.0/24
-gcloud compute networks subnets create subnet-b --network=$VPC2 --region=$REGION --range=10.0.2.0/24
 
-# --- Create HA VPN Gateways ---
-echo "🚀 Creating HA VPN Gateways..."
-gcloud compute vpn-gateways create $VPN_GATEWAY1 --network=$VPC1 --region=$REGION
-gcloud compute vpn-gateways create $VPN_GATEWAY2 --network=$VPC2 --region=$REGION
+gcloud auth list
 
-# --- Create Cloud Routers ---
-echo "🚀 Creating Cloud Routers..."
-gcloud compute routers create $ROUTER1 \
-    --network=$VPC1 \
-    --asn=$ASN1 \
-    --region=$REGION
+export PROJECT_ID=$(gcloud config get-value project)
 
-gcloud compute routers create $ROUTER2 \
-    --network=$VPC2 \
-    --asn=$ASN2 \
-    --region=$REGION
+export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} \
+    --format="value(projectNumber)")
 
-# --- Get Gateway IPs ---
-IP1=$(gcloud compute vpn-gateways describe $VPN_GATEWAY1 --region=$REGION --format="value(ip_address)")
-IP2=$(gcloud compute vpn-gateways describe $VPN_GATEWAY2 --region=$REGION --format="value(ip_address)")
+gcloud compute networks delete default --quiet
 
-echo "📡 Gateway A IP: $IP1"
-echo "📡 Gateway B IP: $IP2"
+gcloud compute networks create vpc-transit --project=$DEVSHELL_PROJECT_ID --subnet-mode=custom --bgp-routing-mode=global
 
-# --- Create VPN Tunnels ---
-echo "🚀 Creating VPN Tunnels..."
-gcloud compute vpn-tunnels create tunnel-a-to-b \
-    --peer-gcp-gateway=$VPN_GATEWAY2 \
-    --region=$REGION \
-    --ike-version=2 \
-    --shared-secret=cloudcupcake \
-    --router=$ROUTER1 \
-    --vpn-gateway=$VPN_GATEWAY1
+# Task 1 is completed
 
-gcloud compute vpn-tunnels create tunnel-b-to-a \
-    --peer-gcp-gateway=$VPN_GATEWAY1 \
-    --region=$REGION \
-    --ike-version=2 \
-    --shared-secret=cloudcupcake \
-    --router=$ROUTER2 \
-    --vpn-gateway=$VPN_GATEWAY2
+gcloud compute networks create vpc-a --project=$DEVSHELL_PROJECT_ID --subnet-mode=custom --bgp-routing-mode=regional --mtu=1460 && gcloud compute networks subnets create vpc-a-sub1-use4 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --range=10.20.10.0/24 --stack-type=IPV4_ONLY --network=vpc-a
 
-# --- Create BGP Interfaces ---
-echo "🚀 Configuring BGP..."
-gcloud compute routers add-interface $ROUTER1 \
-    --interface-name=if-a \
-    --ip-address=169.254.0.1 \
-    --mask-length=30 \
-    --vpn-tunnel=tunnel-a-to-b \
-    --region=$REGION
+gcloud compute networks create vpc-b --project=$DEVSHELL_PROJECT_ID --subnet-mode=custom --bgp-routing-mode=regional --mtu=1460 && gcloud compute networks subnets create vpc-b-sub1-usw2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --range=10.20.20.0/24 --stack-type=IPV4_ONLY --network=vpc-b
 
-gcloud compute routers add-interface $ROUTER2 \
-    --interface-name=if-b \
-    --ip-address=169.254.0.2 \
-    --mask-length=30 \
-    --vpn-tunnel=tunnel-b-to-a \
-    --region=$REGION
+# Task 2 is completed
 
-# --- Add BGP Peers ---
-gcloud compute routers add-bgp-peer $ROUTER1 \
-    --peer-name=peer-to-b \
-    --interface-name=if-a \
-    --peer-ip-address=169.254.0.2 \
-    --peer-asn=$ASN2 \
-    --region=$REGION
+gcloud compute routers create cr-vpc-transit-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --network=vpc-transit --asn=65000 && gcloud compute routers create cr-vpc-a-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --network=vpc-a --asn=65001
 
-gcloud compute routers add-bgp-peer $ROUTER2 \
-    --peer-name=peer-to-a \
-    --interface-name=if-b \
-    --peer-ip-address=169.254.0.1 \
-    --peer-asn=$ASN1 \
-    --region=$REGION
+gcloud compute routers create cr-vpc-transit-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --network=vpc-transit --asn=65000 && gcloud compute routers create cr-vpc-b-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --network=vpc-b --asn=65002
 
-echo "🎉 HA VPN with BGP setup complete!"
+gcloud compute vpn-gateways create vpc-transit-gw1-use4 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --network=vpc-transit && gcloud compute vpn-gateways create vpc-a-gw1-use4 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --network=vpc-a
+
+gcloud compute vpn-gateways create vpc-transit-gw1-usw2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --network=vpc-transit && gcloud compute vpn-gateways create vpc-b-gw1-usw2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --network=vpc-b
+
+# Task 3, Step 1, 2 is completed
+
+gcloud compute vpn-tunnels create transit-to-vpc-a-tu1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --vpn-gateway=vpc-transit-gw1-use4 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_1/vpnGateways/vpc-a-gw1-use4 --router=cr-vpc-transit-use4-1 --shared-secret=gcprocks --ike-version=2 --interface=0
+
+gcloud compute vpn-tunnels create transit-to-vpc-a-tu2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --vpn-gateway=vpc-transit-gw1-use4 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_1/vpnGateways/vpc-a-gw1-use4 --router=cr-vpc-transit-use4-1 --shared-secret=gcprocks --ike-version=2 --interface=1
+
+gcloud compute routers add-interface cr-vpc-transit-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --interface-name=transit-to-vpc-a-tu1 --vpn-tunnel=transit-to-vpc-a-tu1 --ip-address=169.254.1.1 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-transit-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --peer-name=transit-to-vpc-a-bgp1 --peer-asn=65001 --interface=transit-to-vpc-a-tu1 --advertisement-mode=custom --peer-ip-address=169.254.1.2
+
+gcloud compute routers add-interface cr-vpc-transit-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --interface-name=transit-to-vpc-a-tu2 --vpn-tunnel=transit-to-vpc-a-tu2 --ip-address=169.254.1.5 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-transit-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --peer-name=transit-to-vpc-a-bgp2 --peer-asn=65001 --interface=vpc-a-to-transit-tu2 --advertisement-mode=custom --peer-ip-address=169.254.1.6
+
+gcloud compute vpn-tunnels create vpc-a-to-transit-tu1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --vpn-gateway=vpc-a-gw1-use4 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_1/vpnGateways/vpc-transit-gw1-use4 --router=cr-vpc-a-use4-1 --ike-version=2 --shared-secret=gcprocks --interface=0
+
+gcloud compute vpn-tunnels create vpc-a-to-transit-tu2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --vpn-gateway=vpc-a-gw1-use4 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_1/vpnGateways/vpc-transit-gw1-use4 --router=cr-vpc-a-use4-1 --ike-version=2 --shared-secret=gcprocks --interface=1
+
+gcloud compute routers add-interface cr-vpc-a-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --interface-name=vpc-a-to-transit-tu1 --vpn-tunnel=vpc-a-to-transit-tu1 --ip-address=169.254.1.2 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-a-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --peer-name=vpc-a-to-transit-bgp1 --peer-asn=65000 --interface=vpc-a-to-transit-tu1 --advertisement-mode=custom --peer-ip-address=169.254.1.1
+
+gcloud compute routers add-interface cr-vpc-a-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --interface-name=vpc-a-to-transit-tu2 --vpn-tunnel=vpc-a-to-transit-tu2 --ip-address=169.254.1.6 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-a-use4-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_1 --peer-name=vpc-a-to-transit-bgp2 --peer-asn=65000 --interface=vpc-a-to-transit-tu2 --advertisement-mode=custom --peer-ip-address=169.254.1.5
+  
+gcloud compute vpn-tunnels create transit-to-vpc-b-tu1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --vpn-gateway=vpc-transit-gw1-usw2 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_2/vpnGateways/vpc-b-gw1-usw2 --router=cr-vpc-transit-usw2-1 --ike-version=2 --shared-secret=gcprocks --interface=0
+
+gcloud compute vpn-tunnels create transit-to-vpc-b-tu2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --vpn-gateway=vpc-transit-gw1-usw2 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_2/vpnGateways/vpc-b-gw1-usw2 --router=cr-vpc-transit-usw2-1 --ike-version=2 --shared-secret=gcprocks --interface=1
+
+gcloud compute routers add-interface cr-vpc-transit-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --interface-name=transit-to-vpc-b-tu1 --vpn-tunnel=transit-to-vpc-b-tu1 --ip-address=169.254.1.9 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-transit-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --peer-name=transit-to-vpc-b-bgp1 --peer-asn=65002 --interface=transit-to-vpc-b-tu1 --advertisement-mode=custom --peer-ip-address=169.254.1.10
+
+gcloud compute routers add-interface cr-vpc-transit-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --interface-name=transit-to-vpc-b-tu2 --vpn-tunnel=transit-to-vpc-b-tu2 --ip-address=169.254.1.13 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-transit-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --peer-name=transit-to-vpc-b-bgp2 --peer-asn=65002 --interface=vpc-b-to-transit-tu2 --advertisement-mode=custom --peer-ip-address=169.254.1.14
+
+gcloud compute vpn-tunnels create vpc-b-to-transit-tu1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --vpn-gateway=vpc-b-gw1-usw2 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_2/vpnGateways/vpc-transit-gw1-usw2 --router=cr-vpc-b-usw2-1 --ike-version=2 --shared-secret=gcprocks --interface=0
+
+gcloud compute vpn-tunnels create vpc-b-to-transit-tu2 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --vpn-gateway=vpc-b-gw1-usw2 --peer-gcp-gateway=projects/$DEVSHELL_PROJECT_ID/regions/$REGION_2/vpnGateways/vpc-transit-gw1-usw2 --router=cr-vpc-b-usw2-1 --ike-version=2 --shared-secret=gcprocks --interface=1
+
+gcloud compute routers add-interface cr-vpc-b-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --interface-name=vpc-b-to-transit-tu1 --vpn-tunnel=vpc-b-to-transit-tu1 --ip-address=169.254.1.10 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-b-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --peer-name=vpc-b-to-transit-bgp1 --peer-asn=65000 --interface=vpc-b-to-transit-tu1 --advertisement-mode=custom --peer-ip-address=169.254.1.9
+
+gcloud compute routers add-interface cr-vpc-b-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --interface-name=vpc-b-to-transit-tu2 --vpn-tunnel=vpc-b-to-transit-tu2 --ip-address=169.254.1.14 --mask-length=30
+
+gcloud compute routers add-bgp-peer cr-vpc-b-usw2-1 --project=$DEVSHELL_PROJECT_ID --region=$REGION_2 --peer-name=vpc-b-to-transit-bgp2 --peer-asn=65000 --interface=vpc-b-to-transit-tu2 --advertisement-mode=custom --peer-ip-address=169.254.1.13 
+
+# Task 3, Step 3,4 & 5 is completed
+
+
+gcloud services enable networkconnectivity.googleapis.com
+
+
+gcloud alpha network-connectivity hubs create transit-hub \
+   --description=Transit_hub
+
+gcloud alpha network-connectivity spokes create bo1 \
+    --hub=transit-hub \
+    --description=branch_office1 \
+    --vpn-tunnel=transit-to-vpc-a-tu1,transit-to-vpc-a-tu2 \
+    --region=$REGION_1
+
+
+gcloud alpha network-connectivity spokes create bo2 \
+    --hub=transit-hub \
+    --description=branch_office2 \
+    --vpn-tunnel=transit-to-vpc-b-tu1,transit-to-vpc-b-tu2 \
+    --region=$REGION_2
+
+# Task 4 is completed
+
+gcloud compute firewall-rules create fw-a --project=$DEVSHELL_PROJECT_ID --direction=INGRESS --network=vpc-a --action=ALLOW --priority=1000 --rules=tcp:22 --source-ranges=0.0.0.0/0 && gcloud compute firewall-rules create fw-b --project=$DEVSHELL_PROJECT_ID --direction=INGRESS --network=vpc-b --action=ALLOW --priority=1000 --rules=tcp:22 --source-ranges=0.0.0.0/0
+
+gcloud compute instances create vpc-a-vm-1 --project=$DEVSHELL_PROJECT_ID --zone=$ZONE_1 --machine-type=e2-medium --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=vpc-a-sub1-use4 --metadata=enable-oslogin=true --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=$PROJECT_NUMBER-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append --create-disk=auto-delete=yes,boot=yes,device-name=vpc-a-vm-1,image=projects/debian-cloud/global/images/debian-11-bullseye-v20241210,mode=rw,size=10,type=pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --labels=goog-ec-src=vm_add-gcloud --reservation-affinity=any
+
+gcloud compute instances create vpc-b-vm-1 --project=$DEVSHELL_PROJECT_ID --zone=$ZONE_2 --machine-type=e2-medium --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=vpc-b-sub1-usw2 --metadata=enable-oslogin=true --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=$PROJECT_NUMBER-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append --create-disk=auto-delete=yes,boot=yes,device-name=vpc-b-vm-1,image=projects/debian-cloud/global/images/debian-11-bullseye-v20241210,mode=rw,size=10,type=pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --labels=goog-ec-src=vm_add-gcloud --reservation-affinity=any
+
+
+echo ""
+
+echo "Open this below link to update a Firewall Rule for VPC-A"
+
+echo "${YELLOW}${BOLD}[https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/details/fw-a?project=$DEVSHELL_PROJECT_ID]${RESET}"
+
+echo ""
+
+echo "Open this below link to update a Firewall Rule for VPC-B"
+
+echo "${YELLOW}${BOLD}[https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/details/fw-b?project=$DEVSHELL_PROJECT_ID]${RESET}"
+
+echo ""
+
+echo "In the protocal section type"
+
+echo "${YELLOW}${BOLD}icmp"${RESET}
+
+echo ""
