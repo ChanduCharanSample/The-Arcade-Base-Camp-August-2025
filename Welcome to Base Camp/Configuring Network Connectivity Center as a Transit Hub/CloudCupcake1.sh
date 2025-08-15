@@ -1,69 +1,52 @@
-#!/bin/bash
-# Auto-create firewall rules and VMs for GCP lab
+# --- Step 1: Create Firewall Rule 'fw-a' for vpc-a ---
+# This rule allows all incoming TCP, UDP, and ICMP traffic from any source
+# to instances in vpc-a. This is a common rule for initial lab setup.
+gcloud compute firewall-rules create fw-a \
+    --network=vpc-a \
+    --action=ALLOW \
+    --rules=tcp,udp,icmp \
+    --source-ranges=0.0.0.0/0 \
+    --direction=INGRESS \
+    --priority=1000 # Default priority, can be adjusted if needed
 
-echo "🔍 Detecting Project ID..."
-PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
-if [[ -z "$PROJECT_ID" ]]; then
-    PROJECT_ID=$(gcloud projects list --format="value(projectId)" | head -n 1)
-    gcloud config set project "$PROJECT_ID"
-fi
-echo "✅ Project: $PROJECT_ID"
+# Similarly, create firewall rule 'fw-b' for vpc-b.
+# Assuming similar requirements for fw-b, this will allow common traffic.
+gcloud compute firewall-rules create fw-b \
+    --network=vpc-b \
+    --action=ALLOW \
+    --rules=tcp,udp,icmp \
+    --source-ranges=0.0.0.0/0 \
+    --direction=INGRESS \
+    --priority=1000
 
-echo "🔍 Detecting default compute zone..."
-DEFAULT_ZONE=$(gcloud config get-value compute/zone 2>/dev/null)
-if [[ -z "$DEFAULT_ZONE" ]]; then
-    DEFAULT_ZONE="us-central1-c"
-    gcloud config set compute/zone "$DEFAULT_ZONE"
-fi
-echo "✅ Zone: $DEFAULT_ZONE"
+# --- Step 2: Create VM in vpc-a ---
+gcloud compute instances create vpc-a-vm-1 \
+    --project=$(gcloud config get-value project) \
+    --zone=us-central1-c \
+    --machine-type=e2-medium \
+    --network-interface=network=vpc-a,subnet=vpc-a-sub1-use4 \
+    --boot-disk-size=10GB \
+    --boot-disk-type=pd-balanced \
+    --boot-disk-device-name=vpc-a-vm-1-disk \
+    --image-family=debian-11 \
+    --image-project=debian-cloud \
+    --no-address # Do not assign an external IP address for internal-only communication
 
-# -------------------------
-# Step 1: Firewall Rules
-# -------------------------
-create_firewall_rule() {
-    local RULE_NAME=$1
-    local NETWORK=$2
-    if ! gcloud compute firewall-rules describe "$RULE_NAME" --project "$PROJECT_ID" &>/dev/null; then
-        echo "🚀 Creating firewall rule: $RULE_NAME"
-        gcloud compute firewall-rules create "$RULE_NAME" \
-            --network="$NETWORK" \
-            --allow tcp:22,icmp \
-            --direction=INGRESS \
-            --priority=1000
-    else
-        echo "⚠️ Firewall rule $RULE_NAME already exists."
-    fi
-}
+# --- Similarly, create another VM in vpc-b ---
+gcloud compute instances create vpc-b-vm-1 \
+    --project=$(gcloud config get-value project) \
+    --zone=us-west1-b \
+    --machine-type=e2-medium \
+    --network-interface=network=vpc-b,subnet=vpc-b-sub1-usw2 \
+    --boot-disk-size=10GB \
+    --boot-disk-type=pd-balanced \
+    --boot-disk-device-name=vpc-b-vm-1-disk \
+    --image-family=debian-11 \
+    --image-project=debian-cloud \
+    --no-address # Do not assign an external IP address for internal-only communication
 
-create_firewall_rule "fw-a" "vpc-a"
-create_firewall_rule "fw-b" "vpc-b"
-
-# -------------------------
-# Step 2: VM Creation
-# -------------------------
-create_vm() {
-    local VM_NAME=$1
-    local ZONE=$2
-    local NETWORK=$3
-    local SUBNET=$4
-
-    if ! gcloud compute instances describe "$VM_NAME" --zone "$ZONE" --project "$PROJECT_ID" &>/dev/null; then
-        echo "🚀 Creating VM: $VM_NAME in $ZONE"
-        gcloud compute instances create "$VM_NAME" \
-            --zone="$ZONE" \
-            --machine-type=e2-medium \
-            --subnet="$SUBNET" \
-            --network="$NETWORK" \
-            --image-family=debian-11 \
-            --image-project=debian-cloud \
-            --boot-disk-size=10GB \
-            --boot-disk-type=pd-balanced
-    else
-        echo "⚠️ VM $VM_NAME already exists."
-    fi
-}
-
-create_vm "vpc-a-vm-1" "us-central1-c" "vpc-a" "vpc-a-sub1-use4"
-create_vm "vpc-b-vm-1" "us-west1-b" "vpc-b" "vpc-b-sub1-usw2"
-
-echo "🎉 All resources created successfully!"
+# --- Optional: Get Internal IP of vpc-b-vm-1 ---
+# This command will output the internal IP address of vpc-b-vm-1
+gcloud compute instances describe vpc-b-vm-1 \
+    --zone=us-west1-b \
+    --format='value(networkInterfaces[0].networkIp)'
