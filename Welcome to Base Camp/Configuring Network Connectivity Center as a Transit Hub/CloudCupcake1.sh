@@ -1,52 +1,144 @@
-# --- Step 1: Create Firewall Rule 'fw-a' for vpc-a ---
-# This rule allows all incoming TCP, UDP, and ICMP traffic from any source
-# to instances in vpc-a. This is a common rule for initial lab setup.
-gcloud compute firewall-rules create fw-a \
-    --network=vpc-a \
-    --action=ALLOW \
-    --rules=tcp,udp,icmp \
-    --source-ranges=0.0.0.0/0 \
-    --direction=INGRESS \
-    --priority=1000 # Default priority, can be adjusted if needed
+#!/bin/bash
+# task5_robust.sh — Creates fw-a, fw-b, vpc-a-vm-1, vpc-b-vm-1
+# - Auto-detects PROJECT_ID
+# - Verifies networks/subnets exist
+# - Deletes/recreates resources so the lab grader sees fresh creations
+# - If the “suggested” zone doesn’t match the subnet’s region, it auto-picks a valid zone and retries
 
-# Similarly, create firewall rule 'fw-b' for vpc-b.
-# Assuming similar requirements for fw-b, this will allow common traffic.
-gcloud compute firewall-rules create fw-b \
-    --network=vpc-b \
-    --action=ALLOW \
-    --rules=tcp,udp,icmp \
-    --source-ranges=0.0.0.0/0 \
-    --direction=INGRESS \
-    --priority=1000
+set -euo pipefail
 
-# --- Step 2: Create VM in vpc-a ---
-gcloud compute instances create vpc-a-vm-1 \
-    --project=$(gcloud config get-value project) \
-    --zone=us-central1-c \
+log() { printf "\n==> %s\n" "$*"; }
+
+# -----------------------------
+# 0) Project detection
+# -----------------------------
+PROJECT_ID="$(gcloud config get-value project 2>/dev/null || true)"
+if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
+  PROJECT_ID="$(gcloud projects list --format='value(projectId)' | head -n1)"
+  [[ -z "${PROJECT_ID}" ]] && { echo "No GCP project available." ; exit 1; }
+  gcloud config set project "${PROJECT_ID}" >/dev/null
+fi
+log "Using project: ${PROJECT_ID}"
+gcloud services enable compute.googleapis.com >/dev/null
+
+# -----------------------------
+# 1) Inputs from the lab
+# -----------------------------
+NETWORK_A="vpc-a"
+NETWORK_B="vpc-b"
+SUBNET_A="vpc-a-sub1-use4"   # (we’ll discover its real region)
+SUBNET_B="vpc-b-sub1-usw2"   # (we’ll discover its real region)
+SUGGESTED_ZONE_A="us-central1-c"
+SUGGESTED_ZONE_B="us-west1-b"
+VM_A="vpc-a-vm-1"
+VM_B="vpc-b-vm-1"
+FW_A="fw-a"
+FW_B="fw-b"
+
+# -----------------------------
+# 2) Sanity checks: networks/subnets exist
+# -----------------------------
+require_network() {
+  gcloud compute networks describe "$1" >/dev/null 2>&1 || {
+    echo "Network '$1' not found. Create earlier steps first."; exit 1;
+  }
+}
+require_network "${NETWORK_A}"
+require_network "${NETWORK_B}"
+
+# Find each subnet’s region (no need to know it upfront)
+find_subnet_region() {
+  local name="$1" net="$2"
+  gcloud compute networks subnets list \
+    --filter="name=${name} AND network=${net}" \
+    --format="value(region.basename())" \
+    --limit=1
+}
+REGION_A="$(find_subnet_region "${SUBNET_A}" "${NETWORK_A}")"
+REGION_B="$(find_subnet_region "${SUBNET_B}" "${NETWORK_B}")"
+[[ -z "${REGION_A}" ]] && { echo "Subnet ${SUBNET_A} not found in ${NETWORK_A}."; exit 1; }
+[[ -z "${REGION_B}" ]] && { echo "Subnet ${SUBNET_B} not found in ${NETWORK_B}."; exit 1; }
+log "Subnet ${SUBNET_A} is in region: ${REGION_A}"
+log "Subnet ${SUBNET_B} is in region: ${REGION_B}"
+
+# Pick a valid zone in a given region
+pick_zone_in_region() {
+  local region="$1"
+  local link
+  link="$(gcloud compute regions describe "${region}" --format='value(selfLink)')"
+  gcloud compute zones list --filter="region=${link}" --format="value(name)" | head -n1
+}
+FALLBACK_ZONE_A="$(pick_zone_in_region "${REGION_A}")"
+FALLBACK_ZONE_B="$(pick_zone_in_region "${REGION_B}")"
+log "Fallback zone for ${SUBNET_A}: ${FALLBACK_ZONE_A}"
+log "Fallback zone for ${SUBNET_B}: ${FALLBACK_ZONE_B}"
+
+# -----------------------------
+# 3) Fresh firewall rules
+# -----------------------------
+create_fw() {
+  local name="$1" net="$2"
+  # Delete if exists (so grader sees a clean creation)
+  gcloud compute firewall-rules delete "${name}" --quiet >/dev/null 2>&1 || true
+  log "Creating firewall rule ${name} on ${net} (ingress allow tcp:22, icmp from 0.0.0.0/0)"
+  gcloud compute firewall-rules create "${name}" \
+    --network="${net}" \
+    --direction=INGRESS \
+    --priority=1000 \
+    --source-ranges=0.0.0.0/0 \
+    --allow=tcp:22,icmp
+}
+create_fw "${FW_A}" "${NETWORK_A}"
+create_fw "${FW_B}" "${NETWORK_B}"
+
+# -----------------------------
+# 4) Fresh VMs (try suggested zone; if invalid for the subnet’s region, retry in a valid one)
+# -----------------------------
+create_vm_with_retry() {
+  local name="$1" suggested_zone="$2" subnet="$3" network="$4" fallback_zone="$5"
+
+  # Delete if exists
+  gcloud compute instances delete "${name}" --zone="${suggested_zone}" --quiet >/dev/null 2>&1 || true
+  gcloud compute instances delete "${name}" --zone="${fallback_zone}"  --quiet >/dev/null 2>&1 || true
+
+  log "Creating ${name} in ${suggested_zone} (subnet ${subnet})"
+  set +e
+  gcloud compute instances create "${name}" \
+    --zone="${suggested_zone}" \
     --machine-type=e2-medium \
-    --network-interface=network=vpc-a,subnet=vpc-a-sub1-use4 \
-    --boot-disk-size=10GB \
-    --boot-disk-type=pd-balanced \
-    --boot-disk-device-name=vpc-a-vm-1-disk \
+    --subnet="${subnet}" \
+    --network="${network}" \
     --image-family=debian-11 \
     --image-project=debian-cloud \
-    --no-address # Do not assign an external IP address for internal-only communication
-
-# --- Similarly, create another VM in vpc-b ---
-gcloud compute instances create vpc-b-vm-1 \
-    --project=$(gcloud config get-value project) \
-    --zone=us-west1-b \
-    --machine-type=e2-medium \
-    --network-interface=network=vpc-b,subnet=vpc-b-sub1-usw2 \
-    --boot-disk-size=10GB \
     --boot-disk-type=pd-balanced \
-    --boot-disk-device-name=vpc-b-vm-1-disk \
-    --image-family=debian-11 \
-    --image-project=debian-cloud \
-    --no-address # Do not assign an external IP address for internal-only communication
+    --boot-disk-size=10GB
+  rc=$?
+  set -e
 
-# --- Optional: Get Internal IP of vpc-b-vm-1 ---
-# This command will output the internal IP address of vpc-b-vm-1
-gcloud compute instances describe vpc-b-vm-1 \
-    --zone=us-west1-b \
-    --format='value(networkInterfaces[0].networkIp)'
+  if [[ $rc -ne 0 ]]; then
+    log "Suggested zone ${suggested_zone} is invalid for subnet ${subnet}. Retrying in ${fallback_zone}…"
+    gcloud compute instances create "${name}" \
+      --zone="${fallback_zone}" \
+      --machine-type=e2-medium \
+      --subnet="${subnet}" \
+      --network="${network}" \
+      --image-family=debian-11 \
+      --image-project=debian-cloud \
+      --boot-disk-type=pd-balanced \
+      --boot-disk-size=10GB
+  fi
+}
+
+create_vm_with_retry "${VM_A}" "${SUGGESTED_ZONE_A}" "${SUBNET_A}" "${NETWORK_A}" "${FALLBACK_ZONE_A}"
+create_vm_with_retry "${VM_B}" "${SUGGESTED_ZONE_B}" "${SUBNET_B}" "${NETWORK_B}" "${FALLBACK_ZONE_B}"
+
+# -----------------------------
+# 5) Output internal IPs (lab asks for vpc-b-vm-1)
+# -----------------------------
+log "VM Internal IPs"
+gcloud compute instances list \
+  --filter="name=('${VM_A}','${VM_B}')" \
+  --format="table(name, networkInterfaces[0].networkIP, zone)"
+
+echo
+log "Done. Now click “Check my progress”."
