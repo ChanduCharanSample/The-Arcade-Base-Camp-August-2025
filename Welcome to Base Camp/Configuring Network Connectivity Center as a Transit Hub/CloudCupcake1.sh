@@ -18,3 +18,6 @@ gcloud compute firewall-rules create fw-b \
   --allow=tcp:22,icmp \
   --source-ranges=0.0.0.0/0 \
   --quiet
+echo "${YELLOW}${BOLD}LAB COMPLETED SUCCESFULLY ! SUBSCRIBE TO CLOUDCUPCAKE!"${RESET}
+
+echo ""
