@@ -1,31 +1,33 @@
 #!/bin/bash
-# create_fw_a_and_fw_b.sh
-# Creates fw-a and fw-b with identical settings except network.
-
+# create_or_replace_fw_rules.sh
 set -euo pipefail
 
-# Variables
 NETWORK_A="vpc-a"
 NETWORK_B="vpc-b"
 
-# Create fw-a
-echo "Creating firewall rule fw-a for network ${NETWORK_A}..."
-gcloud compute firewall-rules create fw-a \
-  --network="${NETWORK_A}" \
-  --priority=1000 \
-  --direction=INGRESS \
-  --allow=tcp:22 \
-  --source-ranges=0.0.0.0/0 \
-  --quiet
+# Function to recreate a firewall rule
+create_firewall_rule () {
+  local RULE_NAME=$1
+  local NETWORK_NAME=$2
 
-# Create fw-b
-echo "Creating firewall rule fw-b for network ${NETWORK_B}..."
-gcloud compute firewall-rules create fw-b \
-  --network="${NETWORK_B}" \
-  --priority=1000 \
-  --direction=INGRESS \
-  --allow=tcp:22 \
-  --source-ranges=0.0.0.0/0 \
-  --quiet
+  # Delete if exists
+  if gcloud compute firewall-rules describe "$RULE_NAME" --quiet &>/dev/null; then
+    echo "Deleting existing firewall rule $RULE_NAME..."
+    gcloud compute firewall-rules delete "$RULE_NAME" --quiet
+  fi
+
+  # Create fresh rule
+  echo "Creating firewall rule $RULE_NAME for network $NETWORK_NAME..."
+  gcloud compute firewall-rules create "$RULE_NAME" \
+    --network="$NETWORK_NAME" \
+    --priority=1000 \
+    --direction=INGRESS \
+    --allow=tcp:22,icmp \
+    --source-ranges=0.0.0.0/0 \
+    --quiet
+}
+
+create_firewall_rule fw-a "$NETWORK_A"
+create_firewall_rule fw-b "$NETWORK_B"
 
 echo "✅ Firewall rules fw-a and fw-b created successfully."
