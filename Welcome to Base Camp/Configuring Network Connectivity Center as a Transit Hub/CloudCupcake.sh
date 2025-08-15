@@ -128,20 +128,8 @@ gcloud compute instances create vpc-b-vm-1 --project=$DEVSHELL_PROJECT_ID --zone
 
 echo ""
 
-echo "Open this below link to update a Firewall Rule for VPC-A"
 
-echo "${YELLOW}${BOLD}[https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/details/fw-a?project=$DEVSHELL_PROJECT_ID]${RESET}"
 
-echo ""
-
-echo "Open this below link to update a Firewall Rule for VPC-B"
-
-echo "${YELLOW}${BOLD}[https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/details/fw-b?project=$DEVSHELL_PROJECT_ID]${RESET}"
-
-echo ""
-
-echo "In the protocal section type"
-
-echo "${YELLOW}${BOLD}icmp"${RESET}
+echo "${YELLOW}${BOLD}Now run second code!"${RESET}
 
 echo ""
